@@ -53,9 +53,26 @@ public class Timer {
      * @return the average milliseconds per repetition.
      */
     public <T, U> double repeat(int n, Supplier<T> supplier, Function<T, U> function, UnaryOperator<T> preFunction, Consumer<U> postFunction) {
-        logger.trace("repeat: with " + n + " runs");
+    	logger.trace("repeat: with " + n + " runs");
+    	pause();
+        for (int i = 0; i < n; i++) {
+        	T v= supplier.get();
+        	T t= null;
+        	if (preFunction != null) {
+        		t= preFunction.apply(v);
+        	}
+        	else {
+        		t= v;
+        	}
+        	resume();
+        	
+        	U u = function.apply(t);
+        	pauseAndLap();
+        	if (postFunction!= null)
+        		postFunction.accept(u);
+        }
+        return meanLapTime();
         // TO BE IMPLEMENTED: note that the timer is running when this method is called and should still be running when it returns.
-        return 0;
     }
 
     /**
@@ -173,8 +190,9 @@ public class Timer {
      * @return the number of ticks for the system clock. Currently defined as nano time.
      */
     private static long getClock() {
+    	long start = System.nanoTime();
+    	return start;
         // TO BE IMPLEMENTED
-    	return 0;
     }
 
     /**
@@ -185,8 +203,9 @@ public class Timer {
      * @return the corresponding number of milliseconds.
      */
     private static double toMillisecs(long ticks) {
-        // TO BE IMPLEMENTED
-    	return 0;
+    	double millis = ticks / 1E6;
+    	return millis;
+    	// TO BE IMPLEMENTED
     }
 
     final static LazyLogger logger = new LazyLogger(Timer.class);
