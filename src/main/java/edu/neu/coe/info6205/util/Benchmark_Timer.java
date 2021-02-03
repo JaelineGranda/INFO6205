@@ -4,10 +4,13 @@
 
 package edu.neu.coe.info6205.util;
 
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+
+import edu.neu.coe.info6205.sort.simple.InsertionSort;
 
 import static edu.neu.coe.info6205.util.Utilities.formatWhole;
 
@@ -125,4 +128,66 @@ public class Benchmark_Timer<T> implements Benchmark<T> {
     private final Consumer<T> fPost;
 
     final static LazyLogger logger = new LazyLogger(Benchmark_Timer.class);
+    
+    public static void main(String[] args) {
+    	int m = 10;
+    	int n = 16000;	
+    	
+    	// Random Array
+    	Random random = new Random();
+    	Integer [] randArray = new Integer[n];
+		for(int i = 0; i < n; i++) { // random
+			randArray[i] = random.nextInt();
+		}
+		InsertionSort<Integer> randSorter = new InsertionSort<>();
+		Consumer<Integer[]> randConsumer = arr -> randSorter.sort(arr, 0, arr.length);
+		Benchmark_Timer<Integer[]> randBm = new Benchmark_Timer<>("Benchmarking random array with N = " + n, randConsumer);
+		double x = randBm.run(randArray, m);
+		System.out.println(x+ " milliseconds\n");
+		
+		// Ordered Array
+    	Integer [] ordArray = new Integer[n];
+		for(int i = 0; i < n; i++) { // ordered
+			ordArray[i] = i;
+		}
+		InsertionSort<Integer> oSorter = new InsertionSort<>();
+		Consumer<Integer[]> oConsumer = arr -> oSorter.sort(arr, 0, arr.length);
+		Benchmark_Timer<Integer[]> oBm = new Benchmark_Timer<>("Benchmarking ordered array with N = " + n, oConsumer);
+		x = oBm.run(ordArray, m);
+		System.out.println(x+ " milliseconds\n");
+		
+		// Partially Ordered Array
+		Integer [] parArray = new Integer[n];
+    	for(int i = 0; i < n; i++) { // partially ordered
+    		if (i <=(n/2)) {
+    			parArray[i] = i;
+    		}
+    		else {
+    			parArray[i] = random.nextInt();
+    		}
+    	}
+		InsertionSort<Integer> parSorter = new InsertionSort<>();
+		Consumer<Integer[]> parConsumer = arr -> parSorter.sort(arr, 0, arr.length);
+		Benchmark_Timer<Integer[]> parBm = new Benchmark_Timer<>("Benchmarking partial array with N = " + n, parConsumer);
+		x = parBm.run(parArray, m);
+		System.out.println(x+ " milliseconds\n");
+    	
+		// Reversed Ordered Array
+    	Integer [] revArray = new Integer[n];
+    	int reverse = n;
+    	for(int i = 0; i < n; i++) { // reverse ordered
+    		revArray[i] = reverse;
+    		reverse--;
+    	}
+		InsertionSort<Integer> revSorter = new InsertionSort<>();
+		Consumer<Integer[]> revConsumer = arr -> revSorter.sort(arr, 0, arr.length);
+		Benchmark_Timer<Integer[]> revBm = new Benchmark_Timer<>("Benchmarking reversed array with N = " + n, revConsumer);
+		x = revBm.run(revArray, m);
+		System.out.println(x+ " milliseconds");
+
+		
+        //Benchmark<Integer[]> bm = new Benchmark_Timer<>("Random Array", null, 
+        	//	b -> {new InsertionSort<Integer>().sort(b, 0, b.length);}, null);	
+    }
+    
 }
