@@ -216,9 +216,13 @@ public class UF_HWQUPC implements UF {
 		Scanner input = new Scanner(System.in);
         System.out.print("Enter a value for n: ");
         int n = input.nextInt();
-    	UF_HWQUPC uf = new UF_HWQUPC(n);
-    	int connections = uf.count(n);
-        System.out.println("Number of connections: " + connections);
+        int trials = 5;
+        int connections = 0;
+        for (int i = 0; i < trials; i++) {
+        	UF_HWQUPC uf = new UF_HWQUPC(n);
+        	connections = connections + uf.count(n);
+        }
+        System.out.println("Number of connections: " + connections/trials);
     }
     
 }
