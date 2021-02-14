@@ -84,7 +84,9 @@ public class UF_HWQUPC implements UF {
         validate(p);
         int root = p;
         while (root != parent[root]) {
-        	doPathCompression(root);
+        	if (pathCompression) {
+        		doPathCompression(root);
+        	}
         	root = parent[root];
         }
         return root;
