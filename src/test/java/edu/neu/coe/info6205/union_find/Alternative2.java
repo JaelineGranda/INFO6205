@@ -7,14 +7,20 @@
  */
 package edu.neu.coe.info6205.union_find;
 
+import edu.neu.coe.info6205.util.Benchmark_Timer;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * Height-weighted Quick Union with Path Compression
+ * Weighted Quick Union with Path Compression
  */
 public class Alternative2 implements UF {
+
     /**
      * Ensure that site p is connected to site q,
      *
@@ -31,35 +37,23 @@ public class Alternative2 implements UF {
      * component.
      *
      * @param n               the number of sites
-     * @param pathCompression whether to use path compression
+     * @param path_halving    whether to perform path halving while path compression
      * @throws IllegalArgumentException if {@code n < 0}
      */
-    public Alternative2(int n, boolean pathCompression) {
+    public Alternative2(int n,boolean path_halving) {
         count = n;
         parent = new int[n];
-        height = new int[n];
+        size = new int[n];
         for (int i = 0; i < n; i++) {
             parent[i] = i;
-            height[i] = 1;
+            size[i] = 1;
         }
-        this.pathCompression = pathCompression;
-    }
-
-    /**
-     * Initializes an empty union–find data structure with {@code n} sites
-     * {@code 0} through {@code n-1}. Each site is initially in its own
-     * component.
-     *
-     * @param n the number of sites
-     * @throws IllegalArgumentException if {@code n < 0}
-     */
-    public Alternative2(int n) {
-        this(n, true);
+        this.path_halving =  path_halving;
     }
 
     public void show() {
         for (int i = 0; i < parent.length; i++) {
-            System.out.printf("%d: %d, %d\n", i, parent[i], height[i]);
+            System.out.printf("%d: %d, %d\n", i, parent[i], size[i]);
         }
     }
 
@@ -82,12 +76,17 @@ public class Alternative2 implements UF {
     public int find(int p) {
         validate(p);
         int root = p;
-        while (root != parent[root])
-            root = parent[root];
-        while (p != root) {
-            int newparent = parent[p];
-            parent[p] = root;
-            p = newparent;
+
+        if(path_halving)
+            root = doPathHalving(root);        
+        else{                                  
+            while (root != parent[root])
+                root = parent[root];
+            while (p != root) {
+                int newp = parent[p];
+                parent[p] = root;
+                p = newp;
+            }
         }
         return root;
     }
@@ -129,18 +128,18 @@ public class Alternative2 implements UF {
     /**
      * Used only by testing code
      *
-     * @param pathCompression true if you want path compression
+     * @param path_halving true if you want path compression via path halving
      */
-    public void setPathCompression(boolean pathCompression) {
-        this.pathCompression = pathCompression;
+    public void setPathHalving(boolean path_halving) {
+        this.path_halving = path_halving;
     }
 
     @Override
     public String toString() {
-        return "UF_HWQUPC:" + "\n  count: " + count +
-                "\n  path compression? " + pathCompression +
+        return "MY_WQUPC:" + "\n  count: " + count +
+                "\n  path halving? " + path_halving +
                 "\n  parents: " + Arrays.toString(parent) +
-                "\n  heights: " + Arrays.toString(height);
+                "\n  heights: " + Arrays.toString(size);
     }
 
     // validate that p is a valid index
@@ -155,76 +154,70 @@ public class Alternative2 implements UF {
         parent[p] = x;
     }
 
-    private void updateHeight(int p, int x) {
-        height[p] += height[x];
-    }
-
-    /**
-     * Used only by testing code
-     *
-     * @param i the component
-     * @return the parent of the component
-     */
-    private int getParent(int i) {
-        return parent[i];
+    private void updateSize(int p, int x) {
+        size[p] += size[x];
     }
 
     private final int[] parent;   // parent[i] = parent of i
-    private final int[] height;   // height[i] = height of subtree rooted at i
+    private final int[] size;   // size[i] = size of subtree rooted at i
     private int count;  // number of components
-    private boolean pathCompression;
+    private boolean path_halving;
 
     private void mergeComponents(int i, int j) {
-    	int root1 = find(i); 	
-    	int root2 = find(j);
-    	
-    	if ( root1 == root2) {
-    		return;
-    	}
-    	
-        if (height[i] < height[j]) {
-        	parent[i] = j;
+        if(size[i]<size[j]){  //checking which height is taller
+            updateParent(i,j);
+            updateSize(j,i);
         }
-        else if (height[i] > height[j]) {
-        		parent[j] = i;
-        	}
-        	else {
-        		parent[j] = i;
-        		height[i]++;
-        	}
-  
+        else{
+            updateParent(j,i);
+            updateSize(i,j);
+        }
     }
 
     /**
      * This implements the single-pass path-halving mechanism of path compression
      */
-    private void doPathCompression(int i) {
-    	parent[i] = parent[parent[i]];
-    }
-    
-    public int count(int n) {
-    	Random r = new Random();
-    	int result = 0;
-    	while(count != 1) {
-    		int rand1 = r.nextInt(n);
-    		int rand2 = r.nextInt(n);
-    		connect(rand1, rand2);
-    		result++;
-    	}
-    	return result;
-    }
-    
-    public static void main(String[] args) {
-		Scanner input = new Scanner(System.in);
-        System.out.print("Enter a value for n: ");
-        int n = input.nextInt();
-        int trials = 5;
-        int connections = 0;
-        for (int i = 0; i < trials; i++) {
-        	UF_HWQUPC uf = new UF_HWQUPC(n);
-        	connections = connections + uf.count(n);
+    private int doPathHalving(int i) {
+        while(i != parent[i]) {
+            parent[i] = parent[parent[i]];    // update parent to grandparent =>  path compression
+            i = parent[i];                    // Finding the next node
         }
-        System.out.println("Number of connections: " + connections/trials);
+        return i;
     }
-    
+    public static void run(int n,boolean path_halving){
+        Random random = new Random();
+        Alternative2 obj = new Alternative2(n,path_halving);
+        while(true){
+            int first = random.nextInt(n);
+            int second = random.nextInt(n);
+
+            if(!obj.connected(first,second)){
+                obj.union(first,second);
+            }
+            if(obj.components() == 1) break;
+        }
+
+    }
+
+    public static void main(String[] args){
+        int n = 400;
+        for(int i = 0; i<5; i++ ){
+        	int N = n;
+            System.out.println("Number of objects: "+n);
+            Integer[] sample = new Integer[1];
+            Supplier supplier= () -> sample;
+
+            //path halving
+            Benchmark_Timer<Integer[]> timer1 = new Benchmark_Timer<>("Path Halving",null,(xs) -> run(N,true),null);
+            double mean_time1 = timer1.runFromSupplier(supplier, 50);
+            System.out.println("One pass n= "+n+" mean time: " + mean_time1 + " ms");
+
+            //two loops
+            Benchmark_Timer<Integer[]> timer2 = new Benchmark_Timer<>("Double Loop",null,(xs) -> run(N,false),null);
+            double mean_time2 = timer2.runFromSupplier(supplier, 50);
+            System.out.println("Two Loops n= "+n+"  mean time: " + mean_time2 + " ms");
+
+            n*=2;
+        }
+    }
 }

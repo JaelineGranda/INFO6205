@@ -1,20 +1,14 @@
-/**
- * Original code:
- * Copyright © 2000–2017, Robert Sedgewick and Kevin Wayne.
- * <p>
- * Modifications:
- * Copyright (c) 2017. Phasmid Software
- */
 package edu.neu.coe.info6205.union_find;
 
-import java.util.Arrays;
+import edu.neu.coe.info6205.util.Benchmark_Timer;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.function.Supplier;
 
 /**
- * Height-weighted Quick Union using depth
+ * Depth-weighted Quick Union
  */
 public class Alternative1 implements UF {
+
     /**
      * Ensure that site p is connected to site q,
      *
@@ -41,7 +35,9 @@ public class Alternative1 implements UF {
             parent[i] = i;
             depth[i] = 1;
         }
+
     }
+
 
     public void show() {
         for (int i = 0; i < parent.length; i++) {
@@ -68,9 +64,8 @@ public class Alternative1 implements UF {
     public int find(int p) {
         validate(p);
         int root = p;
-        while (root != parent[root]) {
-        	root = parent[root];
-        }
+         while (root != parent[root])
+                root = parent[root];
         return root;
     }
 
@@ -108,13 +103,6 @@ public class Alternative1 implements UF {
         return parent.length;
     }
 
-    @Override
-    public String toString() {
-        return "UF_HWQUPC:" + "\n  count: " + count +
-                "\n  parents: " + Arrays.toString(parent) +
-                "\n  depths: " + Arrays.toString(depth);
-    }
-
     // validate that p is a valid index
     private void validate(int p) {
         int n = parent.length;
@@ -127,69 +115,55 @@ public class Alternative1 implements UF {
         parent[p] = x;
     }
 
-    private void updateHeight(int p, int x) {
+    private void updateDepth(int p, int x) {
         depth[p] += depth[x];
     }
 
-    /**
-     * Used only by testing code
-     *
-     * @param i the component
-     * @return the parent of the component
-     */
-    private int getParent(int i) {
-        return parent[i];
-    }
-
     private final int[] parent;   // parent[i] = parent of i
-    private final int[] depth;   // depth[i] = depth of subtree rooted at i
+    private final int[] depth;   // Depth[i] = Depth of subtree rooted at i
     private int count;  // number of components
 
     private void mergeComponents(int i, int j) {
-    	int root1 = find(i); 	
-    	int root2 = find(j);
-    	
-    	if ( root1 == root2) {
-    		return;
-    	}
-    	
-        if (depth[i] < depth[j]) {
-        	parent[i] = j;
+        if(depth[i]< depth[j]){  //checking which Depth is taller
+            updateParent(i,j);
+            updateDepth(j,i);
         }
-        else if (depth[i] > depth[j]) {
-        		parent[j] = i;
-        	}
-        	else {
-        		parent[j] = i;
-        		depth[i]++;
-        	}
-  
+        else{
+            updateParent(j,i);
+            updateDepth(i,j);
+        }
     }
 
-    
-    public int count(int n) {
-    	Random r = new Random();
-    	int result = 0;
-    	while(count != 1) {
-    		int rand1 = r.nextInt(n);
-    		int rand2 = r.nextInt(n);
-    		connect(rand1, rand2);
-    		result++;
-    	}
-    	return result;
-    }
-    
-    public static void main(String[] args) {
-		Scanner input = new Scanner(System.in);
-        System.out.print("Enter a value for n: ");
-        int n = input.nextInt();
-        int trials = 5;
-        int connections = 0;
-        for (int i = 0; i < trials; i++) {
-        	Alternative1 alt1 = new Alternative1(n);
-        	connections = connections + alt1.count(n);
+
+    public static void run(int n){
+        Random random = new Random();
+        Alternative1 obj = new Alternative1(n);
+        while(true){
+            int first = random.nextInt(n);
+            int second = random.nextInt(n);
+
+            if(!obj.connected(first,second)){
+                obj.union(first,second);
+            }
+            if(obj.components() == 1) break;
         }
-        System.out.println("Number of connections: " + connections/trials);
+
     }
-    
+
+    public static void main(String[] args){
+        int n = 400;
+        for(int i = 0; i<5; i++ ){
+        	int N = n;
+            System.out.println("Number of objects: "+n);
+            Integer[] sample = new Integer[1];
+            Supplier supplier= () -> sample;
+
+            Benchmark_Timer<Integer[]> timer1 = new Benchmark_Timer<>("Depth weighted quick union",null,(xs) -> run(N),null);
+            double mean_time1 = timer1.runFromSupplier(supplier, 50);
+            System.out.println("n= "+n + "    mean time: " + mean_time1 + " ms");
+
+            n*=2;
+        }
+    }
+
 }
